@@ -33,9 +33,9 @@ public class CreateQuads : MonoBehaviour
 
         vertices = new Vector3[]{p4, p5, p1, p0};
         normals = new Vector3[]{Vector3.forward,
-                                  Vector3.forward,
-                                  Vector3.forward,
-                                  Vector3.forward};
+                                Vector3.forward,
+                                Vector3.forward,
+                               Vector3.forward};
         uvs = new Vector2[] {uv11, uv01, uv00, uv10};
         triangles = new int [] {3, 1, 0, 3, 2, 1};
 
