@@ -5,10 +5,11 @@ using UnityEngine;
 public class CreateQuads : MonoBehaviour
 {
     public Material cubeMaterial;
-    void CreateQuad()
+    enum CubeSide {BOTTOM, TOP, LEFT, RIGHT, FRONT, BACK};
+    void CreateQuad(CubeSide side)
     {
         Mesh mesh = new Mesh();
-        mesh.name = "ScriptedMesh";
+        mesh.name = "ScriptedMesh" + side.ToString();
 
         Vector3[] vertices = new Vector3[4];
         Vector3[] normals = new Vector3[4];
@@ -31,13 +32,63 @@ public class CreateQuads : MonoBehaviour
         Vector3 p6 = new Vector3( 0.5f,  0.5f,-0.5f);
         Vector3 p7 = new Vector3(-0.5f,  0.5f,-0.5f);
 
-        vertices = new Vector3[]{p4, p5, p1, p0};
-        normals = new Vector3[]{Vector3.forward,
-                                Vector3.forward,
-                                Vector3.forward,
-                               Vector3.forward};
-        uvs = new Vector2[] {uv11, uv01, uv00, uv10};
-        triangles = new int [] {3, 1, 0, 3, 2, 1};
+        switch(side)
+        {
+           case CubeSide.BOTTOM:
+            vertices = new Vector3[]{p0, p1, p2, p3};
+            normals = new Vector3[]{Vector3.down,
+                                    Vector3.down,
+                                    Vector3.down,
+                                    Vector3.down};
+            uvs = new Vector2[] {uv11, uv01, uv00, uv10};
+            triangles = new int [] {3, 1, 0, 3, 2, 1};
+            break;
+            case CubeSide.TOP:
+            vertices = new Vector3[]{p7, p6, p5, p4};
+            normals = new Vector3[]{Vector3.up,
+                                    Vector3.up,
+                                    Vector3.up,
+                                    Vector3.up};
+            uvs = new Vector2[] {uv11, uv01, uv00, uv10};
+            triangles = new int [] {3, 1, 0, 3, 2, 1};
+            break;
+            case CubeSide.LEFT:
+            vertices = new Vector3[]{p7, p4, p0, p3};
+            normals = new Vector3[]{Vector3.left,
+                                    Vector3.left,
+                                    Vector3.left,
+                                    Vector3.left};
+            uvs = new Vector2[] {uv11, uv01, uv00, uv10};
+            triangles = new int [] {3, 1, 0, 3, 2, 1};
+            break;
+            case CubeSide.RIGHT:
+            vertices = new Vector3[]{p5, p6, p2, p1};
+            normals = new Vector3[]{Vector3.right,
+                                    Vector3.right,
+                                    Vector3.right,
+                                    Vector3.right};
+            uvs = new Vector2[] {uv11, uv01, uv00, uv10};
+            triangles = new int [] {3, 1, 0, 3, 2, 1};
+            break;
+            case CubeSide.FRONT:
+            vertices = new Vector3[]{p4, p5, p1, p0};
+            normals = new Vector3[]{Vector3.forward,
+                                    Vector3.forward,
+                                    Vector3.forward,
+                                    Vector3.forward};
+            uvs = new Vector2[] {uv11, uv01, uv00, uv10};
+            triangles = new int [] {3, 1, 0, 3, 2, 1};
+            break;
+            case CubeSide.BACK:
+            vertices = new Vector3[]{p6, p7, p3, p2};
+            normals = new Vector3[]{Vector3.back,
+                                    Vector3.back,
+                                    Vector3.back,
+                                    Vector3.back};
+            uvs = new Vector2[] {uv11, uv01, uv00, uv10};
+            triangles = new int [] {3, 1, 0, 3, 2, 1};
+            break;
+        }
 
         mesh.vertices = vertices;
         mesh.normals = normals;
@@ -46,7 +97,7 @@ public class CreateQuads : MonoBehaviour
 
         mesh.RecalculateBounds();
 
-        GameObject quad = new GameObject("quad");
+        GameObject quad = new GameObject("Quad");
         quad.transform.parent = this.gameObject.transform;
         MeshFilter meshFilter = (MeshFilter) quad.AddComponent(typeof(MeshFilter));
         meshFilter.mesh = mesh;
@@ -54,8 +105,17 @@ public class CreateQuads : MonoBehaviour
         renderer.material = cubeMaterial;
     }
 
+    void CreateCube()
+    {
+        CreateQuad(CubeSide.FRONT);
+        CreateQuad(CubeSide.BACK);
+        CreateQuad(CubeSide.RIGHT);
+        CreateQuad(CubeSide.LEFT);
+        CreateQuad(CubeSide.TOP);
+        CreateQuad(CubeSide.BOTTOM);
+    }
     void Start()
     {
-        CreateQuad();
+        CreateCube();
     }
 }
