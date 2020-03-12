@@ -116,6 +116,6 @@ public class CreateQuads : MonoBehaviour
     }
     void Start()
     {
-        CreateCube();
+        //CreateCube();
     }
 }
