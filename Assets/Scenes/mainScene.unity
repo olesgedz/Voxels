@@ -419,10 +419,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 1263188891}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 97eca564eeb7aee89ae3d172ff7553a9, type: 3}
+  m_Script: {fileID: 11500000, guid: 41672918ae63a4edd82a85a677344788, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  parent: {fileID: 0}
+  position: {x: 0, y: 0, z: 0}
   cubeMaterial: {fileID: 2100000, guid: d6896aba7af03dcc2bfd3286f28da80b, type: 2}
+  bType: 0
 --- !u!1 &1834674536
 GameObject:
   m_ObjectHideFlags: 0
