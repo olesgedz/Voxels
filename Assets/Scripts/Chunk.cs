@@ -2,35 +2,63 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Chunk : MonoBehaviour
+public class Chunk
 {
+    public Block[,,] chunkData;
     public Material cubeMaterial;
-    IEnumerator BuildChunk(int sizeX, int sizeY, int sizeZ)
+    public GameObject chunk;
+
+    void BuildChunk()
     {
-        for (int z = 0; z < sizeZ; z++)
+        chunkData = new Block[World.chunkSize, World.chunkSize, World.chunkSize];
+        for (int z = 0; z < World.chunkSize; z++)
         {
-            for (int y = 0; y < sizeY; y++)
+            for (int y = 0; y < World.chunkSize; y++)
             {
-                for (int x = 0; x < sizeX; x++)
+                for (int x = 0; x < World.chunkSize; x++)
                 {
                     Vector3 pos = new Vector3(x, y, z);
-                    Block b = new Block(Block.BlockType.DIRT, pos, this.gameObject, cubeMaterial);
-                    b.Draw();
-                    yield return null;
+                    if (Random.Range(0, 100) < 50)
+                    {
+                        chunkData[x, y, z] = new Block(Block.BlockType.GIRL, pos, chunk.gameObject, cubeMaterial, this);
+                    }
+                    else
+                    {
+                        chunkData[x, y, z] = new Block(Block.BlockType.AIR, pos, chunk.gameObject, cubeMaterial, this);
+
+                    }
+                }
+            }
+        }
+    }
+
+    public void DrawChunk()
+    {
+        for (int z = 0; z < World.chunkSize; z++)
+        {
+            for (int y = 0; y < World.chunkSize; y++)
+            {
+                for (int x = 0; x < World.chunkSize; x++)
+                {
+                    chunkData[x, y, z].Draw();
                 }
             }
         }
         CombineQuads();
     }
 
-    void Start()
+    public Chunk(Vector3 position, Material c)
     {
-        StartCoroutine(BuildChunk(4, 4, 4));
+        chunk = new GameObject(World.BuildChunkName(position));
+        chunk.transform.position = position;
+        cubeMaterial = c;
+        BuildChunk();
     }
+
     public void CombineQuads()
     {
         //Combine meshes
-        MeshFilter[] meshFilters = GetComponentsInChildren<MeshFilter>();
+        MeshFilter[] meshFilters = chunk.GetComponentsInChildren<MeshFilter>();
         CombineInstance[] combine = new CombineInstance[meshFilters.Length];
         int i = 0;
         while (i < meshFilters.Length)
@@ -40,17 +68,17 @@ public class Chunk : MonoBehaviour
             i++;
         }
         // Create mesh on the parent object
-        MeshFilter mf = (MeshFilter)this.gameObject.AddComponent(typeof(MeshFilter));
+        MeshFilter mf = (MeshFilter)this.chunk.gameObject.AddComponent(typeof(MeshFilter));
         mf.mesh = new Mesh();
         //add combined, meshes on children as parent's mesh
         mf.mesh.CombineMeshes(combine);
         //renderer for parent 
-        MeshRenderer renderer = this.gameObject.AddComponent(typeof(MeshRenderer)) as MeshRenderer;
+        MeshRenderer renderer = this.chunk.gameObject.AddComponent(typeof(MeshRenderer)) as MeshRenderer;
         renderer.material = cubeMaterial;
 
-        foreach (Transform quad in this.transform)
+        foreach (Transform quad in this.chunk.transform)
         {
-            Destroy(quad.gameObject);
+            Object.Destroy(quad.gameObject);
         }
 
     }

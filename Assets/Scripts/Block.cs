@@ -4,12 +4,15 @@ using UnityEngine;
 
 public class Block
 {
+    //
 
-    enum Cubeside { BOTTOM, TOP, LEFT, RIGHT, FRONT, BACK };
-    public enum BlockType { GRASS, DIRT, STONE };
+    enum Cubeside { BOTTOM, TOP, LEFT, RIGHT, FRONT, BACK};
+    public enum BlockType { GRASS, DIRT, STONE, AIR, GIRL};
 
     BlockType bType;
+    public bool isSolid;
     GameObject parent;
+    Chunk owner;
     Vector3 position;
     Material cubeMaterial;
 
@@ -21,15 +24,22 @@ public class Block
         /*DIRT*/            {new Vector2( 0.125f, 0.9375f ), new Vector2( 0.1875f, 0.9375f),
                                 new Vector2( 0.125f, 1.0f ),new Vector2( 0.1875f, 1.0f )},
         /*STONE*/           {new Vector2( 0, 0.875f ), new Vector2( 0.0625f, 0.875f),
-                                new Vector2( 0, 0.9375f ),new Vector2( 0.0625f, 0.9375f )}
+                                new Vector2( 0, 0.9375f ),new Vector2( 0.0625f, 0.9375f )},
+        /*GIRL*/            {new Vector2(0.375f,0.5f), new Vector2(0.375f,0.4375f),
+                                new Vector2(0.4375f,0.5f), new Vector2(0.4375f,0.4375f)}
                         };
 
-    public Block(BlockType b, Vector3 pos, GameObject p, Material c)
+    public Block(BlockType b, Vector3 pos, GameObject p, Material c, Chunk o)
     {
+        owner = o;
         bType = b;
         parent = p;
         position = pos;
         cubeMaterial = c;
+        if (b == BlockType.AIR)
+            isSolid = false;
+        else
+            isSolid = true;
     }
 
     void CreateQuad(Cubeside side)
@@ -54,6 +64,16 @@ public class Block
             uv10 = blockUVs[0, 1];
             uv01 = blockUVs[0, 2];
             uv11 = blockUVs[0, 3];
+        }else if (bType == BlockType.GIRL)
+        {
+            uv00 = blockUVs[(int)(BlockType.GIRL), 0];
+            uv10 = blockUVs[(int)(BlockType.GIRL), 1];
+            uv01 = blockUVs[(int)(BlockType.GIRL), 2];
+            uv11 = blockUVs[(int)(BlockType.GIRL), 3];
+            //uv00 = blockUVs[(int)(BlockType.STONE + 1), 0];
+            //uv10 = blockUVs[(int)(BlockType.STONE + 1), 1];
+            //uv01 = blockUVs[(int)(BlockType.STONE + 1), 2];
+            //uv11 = blockUVs[(int)(BlockType.STONE + 1), 3];
         }
         else if (bType == BlockType.GRASS && side == Cubeside.BOTTOM)
         {
@@ -140,17 +160,37 @@ public class Block
         MeshFilter meshFilter = (MeshFilter)quad.AddComponent(typeof(MeshFilter));
         meshFilter.mesh = mesh;
 
-        MeshRenderer renderer = quad.AddComponent(typeof(MeshRenderer)) as MeshRenderer;
-        renderer.material = cubeMaterial;
+        //MeshRenderer renderer = quad.AddComponent(typeof(MeshRenderer)) as MeshRenderer;
+        //renderer.material = cubeMaterial;
+    }
+
+    public bool HasSolidNeighbour(int x, int y, int z)
+    {
+        Block[,,] chunks;
+        chunks = owner.chunkData;
+        try
+        {
+            return chunks[x, y, z].isSolid;
+        }
+        catch(System.IndexOutOfRangeException) {}
+        return false;
+        //dsd
     }
 
     public void Draw()
     {
-        CreateQuad(Cubeside.FRONT);
-        CreateQuad(Cubeside.BACK);
-        CreateQuad(Cubeside.TOP);
-        CreateQuad(Cubeside.BOTTOM);
-        CreateQuad(Cubeside.LEFT);
-        CreateQuad(Cubeside.RIGHT);
+        if (bType == BlockType.AIR) return;
+        if (!HasSolidNeighbour((int)position.x, (int)position.y, (int)position.z + 1))
+            CreateQuad(Cubeside.FRONT);
+        if (!HasSolidNeighbour((int)position.x, (int)position.y, (int)position.z - 1))
+            CreateQuad(Cubeside.BACK);
+        if (!HasSolidNeighbour((int)position.x, (int)position.y + 1, (int)position.z))
+            CreateQuad(Cubeside.TOP);
+        if (!HasSolidNeighbour((int)position.x, (int)position.y - 1, (int)position.z))
+            CreateQuad(Cubeside.BOTTOM);
+        if (!HasSolidNeighbour((int)position.x - 1, (int)position.y, (int)position.z))
+            CreateQuad(Cubeside.LEFT);
+        if (!HasSolidNeighbour((int)position.x + 1, (int)position.y, (int)position.z))
+            CreateQuad(Cubeside.RIGHT);
     }
 }
