@@ -20,7 +20,7 @@ public class Chunk
                     Vector3 pos = new Vector3(x, y, z);
                     if (Random.Range(0, 100) < 50)
                     {
-                        chunkData[x, y, z] = new Block(Block.BlockType.GIRL, pos, chunk.gameObject, cubeMaterial, this);
+                        chunkData[x, y, z] = new Block(Block.BlockType.GRASS, pos, chunk.gameObject, cubeMaterial, this);
                     }
                     else
                     {

@@ -168,11 +168,16 @@ public class Block
     {
         Block[,,] chunks;
         chunks = owner.chunkData;
-        try
-        {
+        // try
+        // {
+        //     return chunks[x, y, z].isSolid;
+        // }
+        // catch(System.IndexOutOfRangeException) {}
+
+        if (0 <= x && x < World.chunkSize &&
+            0 <= y && y < World.chunkSize &&
+            0 <= z && z < World.chunkSize)
             return chunks[x, y, z].isSolid;
-        }
-        catch(System.IndexOutOfRangeException) {}
         return false;
         //dsd
     }
