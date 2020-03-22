@@ -181,25 +181,26 @@ public class Block
         // }
         // catch(System.IndexOutOfRangeException) {}
 
-        if (0 < x || x >= World.chunkSize ||
-            0 < y || y >= World.chunkSize ||
-            0 < z || z >= World.chunkSize)
+        if (x < 0 || x >= World.chunkSize ||
+            y < 0 || y >= World.chunkSize ||
+            z < 0 || z >= World.chunkSize)
         {
-            Vector3 neighbourChunkPos = this.parent.transform.position +
-                new Vector3((x - (int)position.x) * World.chunkSize,
-                    (y - (int)position.y) * World.chunkSize,
-                    (z - (int)position.z) * World.chunkSize);
-            string nName = World.BuildChunkName(neighbourChunkPos);
-            x = ConvertBlockIndexToLocal(x);
-            y = ConvertBlockIndexToLocal(y);
-            z = ConvertBlockIndexToLocal(z);
-            Chunk nChunk;
-            if (World.chunks.TryGetValue(nName, out nChunk))
-            {
-                chunks = nChunk.chunkData;
-            }
-            else
-                return false;
+       		Vector3 neighbourChunkPos = this.parent.transform.position + 
+										new Vector3((x - (int)position.x)*World.chunkSize, 
+											(y - (int)position.y)*World.chunkSize, 
+											(z - (int)position.z)*World.chunkSize);
+			string nName = World.BuildChunkName(neighbourChunkPos);
+        	x = ConvertBlockIndexToLocal(x);
+			y = ConvertBlockIndexToLocal(y);
+			z = ConvertBlockIndexToLocal(z);
+			
+			Chunk nChunk;
+			if(World.chunks.TryGetValue(nName, out nChunk))
+			{
+				chunks = nChunk.chunkData;
+			}
+			else
+				return false;
         }
         else
             chunks = owner.chunkData;
