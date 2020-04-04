@@ -324,8 +324,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   target: {fileID: 501254637}
   targetOffset: {x: 0, y: 0, z: 0}
-  distance: 100
-  maxDistance: 100
+  distance: 500
+  maxDistance: 2000
   minDistance: 0.6
   xSpeed: 200
   ySpeed: 200
