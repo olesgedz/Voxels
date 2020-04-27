@@ -19,6 +19,7 @@ public class World : MonoBehaviour
 	CoroutineQueue queue;
 	public static uint maxCorutiines = 1000;
 	public Vector3 lastbuildPos;
+	public static List<string> toRemove = new List<string>();
 
 	public static string BuildChunkName(Vector3 v)
 	{
@@ -85,11 +86,29 @@ public class World : MonoBehaviour
 			{
 				c.Value.DrawChunk();
 			}
-
+			if (c.Value.chunk && Vector3.Distance(player.transform.position,
+				c.Value.chunk.transform.position) > radius * chunkSize)
+				toRemove.Add(c.Key);
 			yield return null;
 		}
 	}
 
+	IEnumerator RemoveOldChunks()
+	{
+		for (int i = 0; i < toRemove.Count; i++)
+		{
+			string n = toRemove[i];
+			Chunk c;
+			if (chunks.TryGetValue(n, out c))
+			{
+				Destroy(c.chunk);
+				c.Save();
+				chunks.TryRemove(n, out c);
+				toRemove.RemoveAt(i);
+				yield return null;
+			}
+		}
+	}
 	public void BuildNearPlayer()
 	{
 		StopCoroutine("BuildrecuriveWorld");
@@ -143,5 +162,6 @@ public class World : MonoBehaviour
 		}
 
 		queue.Run(DrawChunks());
+		queue.Run(RemoveOldChunks());
 	}
 }
