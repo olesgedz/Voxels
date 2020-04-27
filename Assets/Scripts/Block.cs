@@ -1,22 +1,23 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class Block{
 
 	enum Cubeside {BOTTOM, TOP, LEFT, RIGHT, FRONT, BACK};
-	public enum BlockType {GRASS, DIRT, STONE, BEDROCK, REDSTONE, DIAMOND, NOCRACK, 
+	public enum BlockType {GRASS, DIRT, WATER, STONE, LEAVES, WOOD, WOODBASE, SAND, GOLD, BEDROCK, REDSTONE, DIAMOND, NOCRACK, 
 							CRACK1, CRACK2, CRACK3, CRACK4, AIR};
 
 	public BlockType bType;
 	public bool isSolid;
-	Chunk owner;
+	public Chunk owner;
 	GameObject parent;
-	Vector3 position;
+	public Vector3 position;
 
 	public BlockType health;
-	int currentHealth;
-	int[] blockHealthMax = {3, 3, 4, -1, 4, 4, 0, 0, 0, 0, 0, 0};
+	public int currentHealth;
+	int[] blockHealthMax = {3, 3, 10, 4, 2, 4, 4, 2, 3, -1, 4, 4, 0, 0, 0, 0, 0, 0};
 
 	Vector2[,] blockUVs = { 
 		/*GRASS TOP*/		{new Vector2( 0.125f, 0.375f ), new Vector2( 0.1875f, 0.375f),
@@ -25,8 +26,20 @@ public class Block{
 								new Vector2( 0.1875f, 1.0f ),new Vector2( 0.25f, 1.0f )},
 		/*DIRT*/			{new Vector2( 0.125f, 0.9375f ), new Vector2( 0.1875f, 0.9375f),
 								new Vector2( 0.125f, 1.0f ),new Vector2( 0.1875f, 1.0f )},
+		/*WATER*/			{ new Vector2(0.875f,0.125f),  new Vector2(0.9375f,0.125f),
+ 								new Vector2(0.875f,0.1875f), new Vector2(0.9375f,0.1875f)},
 		/*STONE*/			{new Vector2( 0, 0.875f ), new Vector2( 0.0625f, 0.875f),
 								new Vector2( 0, 0.9375f ),new Vector2( 0.0625f, 0.9375f )},
+		/*LEAVES*/			{ new Vector2(0.0625f,0.375f),  new Vector2(0.125f,0.375f),
+ 								new Vector2(0.0625f,0.4375f), new Vector2(0.125f,0.4375f)},
+ 		/*WOOD*/			{ new Vector2(0.375f,0.625f),  new Vector2(0.4375f,0.625f),
+ 								new Vector2(0.375f,0.6875f), new Vector2(0.4375f,0.6875f)},
+ 		/*WOODBASE*/		{ new Vector2(0.375f,0.625f),  new Vector2(0.4375f,0.625f),
+ 								new Vector2(0.375f,0.6875f), new Vector2(0.4375f,0.6875f)},	    
+		/*SAND*/			{ new Vector2(0.125f,0.875f),  new Vector2(0.1875f,0.875f),
+ 								new Vector2(0.125f,0.9375f), new Vector2(0.1875f,0.9375f)},
+ 		/*GOLD*/			{ new Vector2(0f,0.8125f),  new Vector2(0.0625f,0.8125f),
+ 								new Vector2(0f,0.875f), new Vector2(0.0625f,0.875f)},
 		/*BEDROCK*/			{new Vector2( 0.3125f, 0.8125f ), new Vector2( 0.375f, 0.8125f),
 								new Vector2( 0.3125f, 0.875f ),new Vector2( 0.375f, 0.875f )},
 		/*REDSTONE*/		{new Vector2( 0.1875f, 0.75f ), new Vector2( 0.25f, 0.75f),
@@ -52,22 +65,23 @@ public class Block{
 		owner = o;
 		parent = p;
 		position = pos;
-		if(bType == BlockType.AIR)
-			isSolid = false;
-		else
-			isSolid = true;
-
-		health = BlockType.NOCRACK;
-		currentHealth = blockHealthMax[(int)bType];
+		SetType(bType);
 	}
 
 	public void SetType(BlockType b)
 	{
 		bType = b;
-		if(bType == BlockType.AIR)
+		if(bType == BlockType.AIR || bType == BlockType.WATER)
 			isSolid = false;
 		else
 			isSolid = true;
+
+		if(bType == BlockType.WATER)
+		{
+			parent = owner.fluid.gameObject;
+		}
+		else
+			parent = owner.chunk.gameObject;
 
 		health = BlockType.NOCRACK;
 		currentHealth = blockHealthMax[(int)bType];
@@ -82,13 +96,29 @@ public class Block{
 
 	public bool BuildBlock(BlockType b)
 	{
-		SetType(b);
-		owner.Redraw();
+		if(b == BlockType.WATER)
+		{
+			owner.mb.StartCoroutine(owner.mb.Flow(this, 
+										BlockType.WATER, 
+										blockHealthMax[(int)BlockType.WATER],15));
+		}
+		else if(b == BlockType.SAND)
+		{
+			owner.mb.StartCoroutine(owner.mb.Drop(this, 
+										BlockType.SAND, 
+										20));
+		}
+		else
+		{
+			SetType(b);
+			owner.Redraw();
+		}
 		return true;
 	}
 
 	public bool HitBlock()
 	{
+		
 		if(currentHealth == -1) return false;
 		currentHealth--;
 		health++;
@@ -104,8 +134,10 @@ public class Block{
 			isSolid = false;
 			health = BlockType.NOCRACK;
 			owner.Redraw();
+			owner.UpdateChunk();
 			return true;
 		}
+
 		owner.Redraw();
 		return false;
 	}
@@ -158,15 +190,18 @@ public class Block{
 		//{uv11, uv01, uv00, uv10};
 
 		//all possible vertices 
+		//top vertices
 		Vector3 p0 = new Vector3( -0.5f,  -0.5f,  0.5f );
 		Vector3 p1 = new Vector3(  0.5f,  -0.5f,  0.5f );
 		Vector3 p2 = new Vector3(  0.5f,  -0.5f, -0.5f );
 		Vector3 p3 = new Vector3( -0.5f,  -0.5f, -0.5f );		 
+		//bottom vertices
 		Vector3 p4 = new Vector3( -0.5f,   0.5f,  0.5f );
 		Vector3 p5 = new Vector3(  0.5f,   0.5f,  0.5f );
 		Vector3 p6 = new Vector3(  0.5f,   0.5f, -0.5f );
 		Vector3 p7 = new Vector3( -0.5f,   0.5f, -0.5f );
-
+		
+		
 		switch(side)
 		{
 			case Cubeside.BOTTOM:
@@ -232,14 +267,23 @@ public class Block{
 
 	int ConvertBlockIndexToLocal(int i)
 	{
-		if(i == -1) 
-			i = World.chunkSize-1; 
-		else if(i == World.chunkSize) 
-			i = 0;
+		if(i <= -1) 
+			i = World.chunkSize+i; 
+		else if(i >= World.chunkSize) 
+			i = i-World.chunkSize;
 		return i;
 	}
+	
+	public BlockType GetBlockType(int x, int y, int z)
+	{
+		Block b = GetBlock(x, y, z);
+		if(b == null)
+			return BlockType.AIR;
+		else
+			return b.bType;
+	}
 
-	public bool HasSolidNeighbour(int x, int y, int z)
+	public Block GetBlock(int x, int y, int z)
 	{
 		Block[,,] chunks;
 
@@ -248,10 +292,16 @@ public class Block{
 		   z < 0 || z >= World.chunkSize)
 		{  //block in a neighbouring chunk
 			
+			int newX = x, newY = y, newZ = z;
+			if(x < 0 || x >= World.chunkSize)
+				newX = (x - (int)position.x)*World.chunkSize;
+			if(y < 0 || y >= World.chunkSize)
+				newY = (y - (int)position.y)*World.chunkSize;
+			if(z < 0 || z >= World.chunkSize)
+				newZ = (z - (int)position.z)*World.chunkSize;
+
 			Vector3 neighbourChunkPos = this.parent.transform.position + 
-										new Vector3((x - (int)position.x)*World.chunkSize, 
-											(y - (int)position.y)*World.chunkSize, 
-											(z - (int)position.z)*World.chunkSize);
+										new Vector3(newX, newY, newZ);
 			string nName = World.BuildChunkName(neighbourChunkPos);
 
 			x = ConvertBlockIndexToLocal(x);
@@ -264,14 +314,21 @@ public class Block{
 				chunks = nChunk.chunkData;
 			}
 			else
-				return false;
+				return null;
 		}  //block in this chunk
 		else
 			chunks = owner.chunkData;
-		
+
+		return chunks[x,y,z];
+	}
+	
+	public bool HasSolidNeighbour(int x, int y, int z)
+	{
 		try
 		{
-			return chunks[x,y,z].isSolid;
+			Block b = GetBlock(x,y,z);
+			if(b != null)
+				return (b.isSolid || b.bType == bType);
 		}
 		catch(System.IndexOutOfRangeException){}
 
@@ -281,7 +338,7 @@ public class Block{
 	public void Draw()
 	{
 		if(bType == BlockType.AIR) return;
-
+		//solid or same neighbour
 		if(!HasSolidNeighbour((int)position.x,(int)position.y,(int)position.z + 1))
 			CreateQuad(Cubeside.FRONT);
 		if(!HasSolidNeighbour((int)position.x,(int)position.y,(int)position.z - 1))
