@@ -1,78 +1,106 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
+using Realtime.Messaging.Internal;
 
-public class World : MonoBehaviour {
+
+public class World : MonoBehaviour
+{
 
 	public GameObject player;
 	public Material textureAtlas;
 	public static int columnHeight = 16;
 	public static int chunkSize = 16;
-	//public static int worldSize = 2;
-	public static int radius = 1;
-	public static Dictionary<string, Chunk> chunks;
+	public static int worldSize = 1;
+	public static int radius = 4;
+	public static ConcurrentDictionary<string, Chunk> chunks;
+	public static bool firstbuild = true;
 
 	public static string BuildChunkName(Vector3 v)
 	{
-		return (int)v.x + "_" + 
-			         (int)v.y + "_" + 
-			         (int)v.z;
+		return (int)v.x + "_" +
+					 (int)v.y + "_" +
+					 (int)v.z;
 	}
 
-	IEnumerator BuildChunkColumn()
+	void BuildChunkAt(int x, int y, int z)
 	{
-		for(int i = 0; i < columnHeight; i++)
+		Vector3 chunkPosition = new Vector3(x * chunkSize,
+											y * chunkSize,
+											z * chunkSize);
+
+		string n = BuildChunkName(chunkPosition);
+		Chunk c;
+
+		if (!chunks.TryGetValue(n, out c))
 		{
-			Vector3 chunkPosition = new Vector3(this.transform.position.x, 
-												i*chunkSize, 
-												this.transform.position.z);
-			Chunk c = new Chunk(chunkPosition, textureAtlas);
+			c = new Chunk(chunkPosition, textureAtlas);
 			c.chunk.transform.parent = this.transform;
-			chunks.Add(c.chunk.name, c);
+			chunks.TryAdd(c.chunk.name, c);
 		}
 
-		foreach(KeyValuePair<string, Chunk> c in chunks)
-		{
-			c.Value.DrawChunk();
-			yield return null;
-		}
-		
 	}
 
-	IEnumerator BuildWorld()
+	IEnumerator BuildRecursiveWorld(int x, int y, int z, int rad)
 	{
-		int posx = (int)Mathf.Floor(player.transform.position.x / chunkSize);
-		int posz = (int)Mathf.Floor(player.transform.position.z / chunkSize);
+		if (rad <= 0) yield break;
+		BuildChunkAt(x, y, z - 1);
+		StartCoroutine(BuildRecursiveWorld(x, y, z - 1, rad - 1));
 
-		for(int z = -radius; z <= radius; z++)
-			for(int x = -radius; x < radius; x++)
-				for(int y = 0; y < columnHeight; y++)
-				{
-					Vector3 chunkPosition = new Vector3(x * chunkSize,
-							y*chunkSize, z * chunkSize);
-					Chunk c = new Chunk(chunkPosition, textureAtlas);
-					c.chunk.transform.parent = this.transform;
-					chunks.Add(c.chunk.name, c);
-				}
-		foreach(KeyValuePair<string, Chunk> c in chunks)
+		yield return null;
+	}
+
+	IEnumerator DrawChunks()
+	{
+		foreach (KeyValuePair<string, Chunk> c in chunks)
 		{
-			c.Value.DrawChunk();
+			if (c.Value.status == Chunk.ChunkStatus.DRAW)
+			{
+				c.Value.DrawChunk();
+			}
+
 			yield return null;
 		}
-		player.SetActive(true);
 	}
 
 	// Use this for initialization
-	void Start () {
+	void Start()
+	{
+		Vector3 ppos = player.transform.position;
+		player.transform.position = new Vector3(ppos.x,
+											Utils.GenerateHeight(ppos.x, ppos.z) + 1,
+											ppos.z);
+
 		player.SetActive(false);
-		chunks = new Dictionary<string, Chunk>();
+
+		firstbuild = true;
+		chunks = new ConcurrentDictionary<string, Chunk>();
 		this.transform.position = Vector3.zero;
 		this.transform.rotation = Quaternion.identity;
-		StartCoroutine(BuildWorld());
+
+		//build starting chunk
+		BuildChunkAt((int)(player.transform.position.x / chunkSize),
+											(int)(player.transform.position.y / chunkSize),
+											(int)(player.transform.position.z / chunkSize));
+		//draw it
+		StartCoroutine(DrawChunks());
+
+		//create a bigger world
+		StartCoroutine(BuildRecursiveWorld((int)(player.transform.position.x / chunkSize),
+											(int)(player.transform.position.y / chunkSize),
+											(int)(player.transform.position.z / chunkSize), radius));
 	}
-	
+
 	// Update is called once per frame
-	void Update () {
-		
+	void Update()
+	{
+		if (!player.activeSelf)
+		{
+			player.SetActive(true);
+			firstbuild = false;
+		}
+
+		StartCoroutine(DrawChunks());
 	}
 }
